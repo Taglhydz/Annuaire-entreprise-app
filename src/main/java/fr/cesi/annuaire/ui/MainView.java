@@ -281,6 +281,11 @@ public class MainView {
         Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         if (okButton != null) {
             okButton.setDefaultButton(false);
+            passwordField.setOnAction(evt -> {
+                if (!okButton.isDisabled()) {
+                    okButton.fire();
+                }
+            });
         }
         dialog.setOnShown(event -> Platform.runLater(usernameField::requestFocus));
 
