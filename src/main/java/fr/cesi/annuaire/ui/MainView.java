@@ -17,6 +17,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.Pagination;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -26,9 +27,9 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 
 import java.util.List;
 import java.util.Locale;
@@ -36,7 +37,8 @@ import java.util.Optional;
 
 public class MainView {
 
-    private static final double LARGE_CONTROL_HEIGHT = 52;
+    private static final double CONTROL_HEIGHT = 40;
+    private static final int ROWS_PER_PAGE = 15;
 
     private final DirectoryService directoryService;
     private final AdminAuthService adminAuthService;
@@ -58,68 +60,102 @@ public class MainView {
 
     public Scene buildScene() {
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(12));
+        root.setPadding(new Insets(16));
 
         // Deux champs de recherche séparés
         TextField nameSearchField = new TextField();
-        nameSearchField.setPromptText("Recherche nom / prénom...");
-        setLargeHeight(nameSearchField);
+        nameSearchField.setPromptText("Nom / prénom...");
+        setHeight(nameSearchField);
 
         TextField phoneSearchField = new TextField();
-        phoneSearchField.setPromptText("Recherche portable...");
-        setLargeHeight(phoneSearchField);
+        phoneSearchField.setPromptText("Portable...");
+        setHeight(phoneSearchField);
 
         ComboBox<FilterOption> siteFilter = new ComboBox<>();
         ComboBox<FilterOption> departmentFilter = new ComboBox<>();
 
-        siteFilter.setPrefWidth(220);
-        departmentFilter.setPrefWidth(220);
-        setLargeHeight(siteFilter);
-        setLargeHeight(departmentFilter);
+        siteFilter.setPrefWidth(200);
+        departmentFilter.setPrefWidth(200);
+        setHeight(siteFilter);
+        setHeight(departmentFilter);
 
-        Button resetButton = new Button("Réinitialiser");
-        setLargeHeight(resetButton);
+        Button resetButton = new Button("↺  Réinitialiser");
+        resetButton.getStyleClass().add("button-reset");
+        setHeight(resetButton);
+
+        Label nameLabel = new Label("Nom / Prénom");
+        Label phoneLabel = new Label("Portable");
+        Label siteLabel = new Label("Site");
+        Label serviceLabel = new Label("Service");
 
         HBox filterBar = new HBox(10,
-            new Label("Nom / Prénom"), nameSearchField,
-            new Label("Portable"), phoneSearchField,
-            new Label("Site"), siteFilter,
-            new Label("Service"), departmentFilter,
+            nameLabel, nameSearchField,
+            phoneLabel, phoneSearchField,
+            siteLabel, siteFilter,
+            serviceLabel, departmentFilter,
             resetButton
         );
-        filterBar.setPadding(new Insets(0, 0, 10, 0));
+        filterBar.getStyleClass().add("filter-bar");
+        filterBar.setStyle("-fx-padding: 12 16 12 16; -fx-spacing: 10; -fx-alignment: CENTER_LEFT;");
+
+        // Wrapping dans un VBox pour avoir un peu d'espace avant la table
+        VBox topArea = new VBox(0, filterBar);
+        topArea.setSpacing(0);
 
         TableView<Employee> table = buildTable();
-        table.setItems(tableData);
+        ObservableList<Employee> pagedData = FXCollections.observableArrayList();
+        table.setItems(pagedData);
+
+        Pagination pagination = new Pagination(1, 0);
+        pagination.setMaxPageIndicatorCount(8);
+        pagination.setPageFactory(pageIndex -> new Region());
+        pagination.currentPageIndexProperty().addListener((obs, oldV, newV) ->
+            showPage(tableData, pagedData, newV.intValue()));
+
+        VBox tableSection = new VBox(8, table, pagination);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
         VBox detailsPanel = buildDetailsPanel();
 
-        root.setTop(filterBar);
-        root.setCenter(table);
+        root.setTop(topArea);
+        root.setCenter(tableSection);
         root.setRight(detailsPanel);
 
-        loadFilters(siteFilter, departmentFilter);
-        refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
+        BorderPane.setMargin(tableSection, new Insets(12, 12, 0, 0));
+        BorderPane.setMargin(detailsPanel, new Insets(12, 0, 0, 0));
 
-        nameSearchField.textProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
-        phoneSearchField.textProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
-        siteFilter.valueProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
-        departmentFilter.valueProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
+        loadFilters(siteFilter, departmentFilter);
+        refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter, pagination, pagedData);
+
+        nameSearchField.textProperty().addListener((obs, oldV, newV) ->
+            refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter, pagination, pagedData));
+        phoneSearchField.textProperty().addListener((obs, oldV, newV) ->
+            refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter, pagination, pagedData));
+        siteFilter.valueProperty().addListener((obs, oldV, newV) ->
+            refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter, pagination, pagedData));
+        departmentFilter.valueProperty().addListener((obs, oldV, newV) ->
+            refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter, pagination, pagedData));
 
         resetButton.setOnAction(evt -> {
             nameSearchField.clear();
             phoneSearchField.clear();
             siteFilter.getSelectionModel().selectFirst();
             departmentFilter.getSelectionModel().selectFirst();
-            refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
+            refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter, pagination, pagedData);
         });
 
-        table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> showDetails(newSel));
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) ->
+            showDetails(newSel));
 
         Scene scene = new Scene(root, 1300, 700);
+        scene.getStylesheets().add(
+            getClass().getResource("/styles/app.css").toExternalForm()
+        );
+
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.Q) {
-                openAdminLoginDialog(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
+                openAdminLoginDialog(nameSearchField, phoneSearchField, siteFilter, departmentFilter,
+                        pagination, pagedData);
                 event.consume();
             }
         });
@@ -129,13 +165,13 @@ public class MainView {
 
     private void loadFilters(ComboBox<FilterOption> siteFilter, ComboBox<FilterOption> departmentFilter) {
         ObservableList<FilterOption> siteOptions = FXCollections.observableArrayList();
-        siteOptions.add(new FilterOption(null, "Tous"));
+        siteOptions.add(new FilterOption(null, "Tous les sites"));
         for (Site site : directoryService.getSites()) {
             siteOptions.add(new FilterOption(site.getId(), site.getVille()));
         }
 
         ObservableList<FilterOption> departmentOptions = FXCollections.observableArrayList();
-        departmentOptions.add(new FilterOption(null, "Tous"));
+        departmentOptions.add(new FilterOption(null, "Tous les services"));
         for (Department department : directoryService.getDepartments()) {
             departmentOptions.add(new FilterOption(department.getId(), department.getNom()));
         }
@@ -147,15 +183,26 @@ public class MainView {
         departmentFilter.getSelectionModel().selectFirst();
     }
 
-    private void refreshData(TextField nameSearchField, TextField phoneSearchField,
-                              ComboBox<FilterOption> siteFilter, ComboBox<FilterOption> departmentFilter) {
+    private void refreshData(TextField nameSearchField,
+                              TextField phoneSearchField,
+                              ComboBox<FilterOption> siteFilter,
+                              ComboBox<FilterOption> departmentFilter,
+                              Pagination pagination,
+                              ObservableList<Employee> pagedData) {
         Long siteId = Optional.ofNullable(siteFilter.getValue()).map(FilterOption::getId).orElse(null);
         Long departmentId = Optional.ofNullable(departmentFilter.getValue()).map(FilterOption::getId).orElse(null);
 
-        // On passe le portable au service (recherche existante)
-        List<Employee> result = directoryService.searchEmployees(phoneSearchField.getText(), siteId, departmentId);
+        String phoneQueryRaw = phoneSearchField.getText() == null ? "" : phoneSearchField.getText().trim();
+        if (containsLetters(phoneQueryRaw)) {
+            tableData.clear();
+            updatePagination(pagination, pagedData);
+            return;
+        }
+        String phoneQuery = digitsOnly(phoneQueryRaw);
 
-        // Filtre nom/prénom côté client avec support multi-mots (ex: "Jean Dupont")
+        List<Employee> result = directoryService.searchEmployees(
+            null, siteId, departmentId);
+
         String nameQuery = nameSearchField.getText().trim();
         if (!nameQuery.isBlank()) {
             String[] parts = nameQuery.toLowerCase(Locale.ROOT).split("\\s+");
@@ -169,7 +216,58 @@ public class MainView {
             }).toList();
         }
 
+        if (!phoneQuery.isBlank()) {
+            result = result.stream()
+                    .filter(emp -> digitsOnly(emp.getTelephonePortable()).contains(phoneQuery))
+                    .toList();
+        }
+
         tableData.setAll(result);
+        updatePagination(pagination, pagedData);
+    }
+
+    private void updatePagination(Pagination pagination, ObservableList<Employee> pagedData) {
+        int total = tableData.size();
+        int pageCount = Math.max(1, (int) Math.ceil((double) total / ROWS_PER_PAGE));
+        pagination.setPageCount(pageCount);
+
+        int current = pagination.getCurrentPageIndex();
+        if (current >= pageCount) {
+            pagination.setCurrentPageIndex(pageCount - 1);
+            current = pagination.getCurrentPageIndex();
+        }
+        showPage(tableData, pagedData, current);
+    }
+
+    private void showPage(ObservableList<Employee> source,
+                          ObservableList<Employee> target,
+                          int pageIndex) {
+        int fromIndex = pageIndex * ROWS_PER_PAGE;
+        if (fromIndex >= source.size()) {
+            target.clear();
+            return;
+        }
+        int toIndex = Math.min(fromIndex + ROWS_PER_PAGE, source.size());
+        target.setAll(source.subList(fromIndex, toIndex));
+    }
+
+    private boolean containsLetters(String value) {
+        if (value == null) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            if (Character.isLetter(value.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String digitsOnly(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return value.replaceAll("\\D", "");
     }
 
     private TableView<Employee> buildTable() {
@@ -190,11 +288,7 @@ public class MainView {
         TableColumn<Employee, String> portableCol = new TableColumn<>("Portable");
         portableCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getTelephonePortable()));
 
-        table.getColumns().add(nomCol);
-        table.getColumns().add(prenomCol);
-        table.getColumns().add(siteCol);
-        table.getColumns().add(serviceCol);
-        table.getColumns().add(portableCol);
+        table.getColumns().addAll(nomCol, prenomCol, siteCol, serviceCol, portableCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         return table;
@@ -202,90 +296,95 @@ public class MainView {
 
     private VBox buildDetailsPanel() {
         Label title = new Label("Fiche salarié");
-        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        title.getStyleClass().add("detail-title");
 
-        nomValue = valueLabel();
-        prenomValue = valueLabel();
-        fixeValue = valueLabel();
+        nomValue     = valueLabel();
+        prenomValue  = valueLabel();
+        fixeValue    = valueLabel();
         portableValue = valueLabel();
-        emailValue = valueLabel();
-        siteValue = valueLabel();
+        emailValue   = valueLabel();
+        siteValue    = valueLabel();
         serviceValue = valueLabel();
 
-        VBox panel = new VBox(8,
-                title,
-                line("Nom", nomValue),
-                line("Prénom", prenomValue),
-                line("Téléphone fixe", fixeValue),
-                line("Téléphone portable", portableValue),
-                line("Email", emailValue),
-                line("Site", siteValue),
-                line("Service", serviceValue)
+        VBox panel = new VBox(10,
+            title,
+            line("Nom",               nomValue),
+            line("Prénom",            prenomValue),
+            line("Téléphone fixe",    fixeValue),
+            line("Téléphone portable",portableValue),
+            line("Email",             emailValue),
+            line("Site",              siteValue),
+            line("Service",           serviceValue)
         );
+        panel.getStyleClass().add("details-panel");
         panel.setPrefWidth(340);
-        panel.setPadding(new Insets(10, 0, 0, 14));
 
         return panel;
     }
 
-    private HBox line(String label, Label value) {
-        Label lbl = new Label(label + " :");
-        lbl.setMinWidth(130);
+    private HBox line(String labelText, Label value) {
+        Label lbl = new Label(labelText);
+        lbl.getStyleClass().add("detail-label");
         return new HBox(10, lbl, value);
     }
 
     private Label valueLabel() {
-        Label label = new Label("-");
-        label.setTextFill(Color.DARKSLATEGRAY);
+        Label label = new Label("—");
+        label.getStyleClass().add("detail-value");
         return label;
     }
 
     private void showDetails(Employee employee) {
         if (employee == null) {
-            nomValue.setText("-");
-            prenomValue.setText("-");
-            fixeValue.setText("-");
-            portableValue.setText("-");
-            emailValue.setText("-");
-            siteValue.setText("-");
-            serviceValue.setText("-");
+            nomValue.setText("—");
+            prenomValue.setText("—");
+            fixeValue.setText("—");
+            portableValue.setText("—");
+            emailValue.setText("—");
+            siteValue.setText("—");
+            serviceValue.setText("—");
             return;
         }
-
         nomValue.setText(safe(employee.getNom()));
         prenomValue.setText(safe(employee.getPrenom()));
         fixeValue.setText(safe(employee.getTelephoneFixe()));
         portableValue.setText(safe(employee.getTelephonePortable()));
         emailValue.setText(safe(employee.getEmail()));
-        siteValue.setText(employee.getSite() == null ? "-" : safe(employee.getSite().getVille()));
-        serviceValue.setText(employee.getDepartment() == null ? "-" : safe(employee.getDepartment().getNom()));
+        siteValue.setText(employee.getSite() == null ? "—" : safe(employee.getSite().getVille()));
+        serviceValue.setText(employee.getDepartment() == null ? "—" : safe(employee.getDepartment().getNom()));
     }
 
     private String safe(String value) {
-        return value == null || value.isBlank() ? "-" : value;
+        return value == null || value.isBlank() ? "—" : value;
     }
 
-    private void setLargeHeight(Region control) {
-        control.setMinHeight(LARGE_CONTROL_HEIGHT);
-        control.setPrefHeight(LARGE_CONTROL_HEIGHT);
+    private void setHeight(Region control) {
+        control.setMinHeight(CONTROL_HEIGHT);
+        control.setPrefHeight(CONTROL_HEIGHT);
     }
 
     private void openAdminLoginDialog(TextField nameSearchField, TextField phoneSearchField,
                                       ComboBox<FilterOption> siteFilter,
-                                      ComboBox<FilterOption> departmentFilter) {
+                                      ComboBox<FilterOption> departmentFilter,
+                                      Pagination pagination,
+                                      ObservableList<Employee> pagedData) {
         Dialog<Boolean> dialog = new Dialog<>();
         dialog.setTitle("Authentification administrateur");
+        dialog.getDialogPane().getStylesheets().add(
+            getClass().getResource("/styles/app.css").toExternalForm()
+        );
 
         TextField usernameField = new TextField();
-        usernameField.setPromptText("Username");
+        usernameField.setPromptText("Nom d'utilisateur");
 
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Mot de passe");
 
         GridPane grid = new GridPane();
-        grid.setHgap(8);
-        grid.setVgap(8);
-        grid.addRow(0, new Label("Username"), usernameField);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(12, 0, 0, 0));
+        grid.addRow(0, new Label("Utilisateur"), usernameField);
         grid.addRow(1, new Label("Mot de passe"), passwordField);
 
         dialog.getDialogPane().setContent(grid);
@@ -295,13 +394,10 @@ public class MainView {
         if (okButton != null) {
             okButton.setDefaultButton(false);
             passwordField.setOnAction(evt -> {
-                if (!okButton.isDisabled()) {
-                    okButton.fire();
-                }
+                if (!okButton.isDisabled()) okButton.fire();
             });
         }
         dialog.setOnShown(event -> Platform.runLater(usernameField::requestFocus));
-
         dialog.setResultConverter(type -> type == ButtonType.OK);
 
         Optional<Boolean> confirmed = dialog.showAndWait();
@@ -310,10 +406,12 @@ public class MainView {
             if (ok) {
                 new AdminDashboardView(directoryService, () -> {
                     loadFilters(siteFilter, departmentFilter);
-                    refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
+                    refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter,
+                        pagination, pagedData);
                 }).show();
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Accès refusé");
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Identifiants incorrects — accès refusé.");
+                alert.setHeaderText("Accès refusé");
                 alert.showAndWait();
             }
         }

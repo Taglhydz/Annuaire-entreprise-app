@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class DirectoryService {
@@ -69,10 +70,14 @@ public class DirectoryService {
 
     public void deleteSite(Long id) {
         Site site = siteRepository.findById(requireId(id)).orElseThrow(() -> new IllegalArgumentException("Site introuvable"));
-        inTransaction(() -> {
-            siteRepository.delete(site);
-            return null;
-        });
+        try {
+            inTransaction(() -> {
+                siteRepository.delete(site);
+                return null;
+            });
+        } catch (RuntimeException ex) {
+            throw translateDeleteConstraint(ex, "site");
+        }
     }
 
     public Department createDepartment(String name) {
@@ -93,10 +98,14 @@ public class DirectoryService {
     public void deleteDepartment(Long id) {
         Department department = departmentRepository.findById(requireId(id))
                 .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
-        inTransaction(() -> {
-            departmentRepository.delete(department);
-            return null;
-        });
+        try {
+            inTransaction(() -> {
+                departmentRepository.delete(department);
+                return null;
+            });
+        } catch (RuntimeException ex) {
+            throw translateDeleteConstraint(ex, "service");
+        }
     }
 
     public Employee createEmployee(String lastName,
@@ -162,6 +171,30 @@ public class DirectoryService {
             throw new IllegalArgumentException("Identifiant invalide");
         }
         return id;
+    }
+
+    private RuntimeException translateDeleteConstraint(RuntimeException ex, String resourceLabel) {
+        if (isConstraintViolation(ex)) {
+            return new IllegalArgumentException("Suppression impossible : des salariés sont encore rattachés à ce " + resourceLabel + ".");
+        }
+        return ex;
+    }
+
+    private boolean isConstraintViolation(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase(Locale.ROOT);
+                if (normalized.contains("foreign key")
+                        || normalized.contains("constraint")
+                        || normalized.contains("integrity")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private <T> T inTransaction(TransactionWork<T> work) {
