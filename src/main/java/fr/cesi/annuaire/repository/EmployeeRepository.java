@@ -19,14 +19,18 @@ public class EmployeeRepository {
         String jpql = """
                 SELECT e
                 FROM Employee e
-                WHERE (:searchText IS NULL OR LOWER(e.nom) LIKE CONCAT('%', LOWER(:searchText), '%'))
+                                WHERE (:searchText IS NULL
+                                             OR LOWER(e.nom) LIKE CONCAT('%', LOWER(:searchText), '%')
+                                             OR LOWER(e.prenom) LIKE CONCAT('%', LOWER(:searchText), '%')
+                                             OR e.telephonePortable LIKE CONCAT('%', :searchDigits, '%'))
                   AND (:siteId IS NULL OR e.site.id = :siteId)
                   AND (:departmentId IS NULL OR e.department.id = :departmentId)
                 ORDER BY e.nom, e.prenom
                 """;
 
         TypedQuery<Employee> query = entityManager.createQuery(jpql, Employee.class);
-        query.setParameter("searchText", normalize(searchText));
+                query.setParameter("searchText", normalize(searchText));
+                query.setParameter("searchDigits", normalizeDigits(searchText));
         query.setParameter("siteId", siteId);
         query.setParameter("departmentId", departmentId);
         return query.getResultList();
@@ -60,5 +64,13 @@ public class EmployeeRepository {
             return null;
         }
         return value.trim();
+    }
+
+    private String normalizeDigits(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String digits = value.replaceAll("\\D", "");
+        return digits.isBlank() ? null : digits;
     }
 }

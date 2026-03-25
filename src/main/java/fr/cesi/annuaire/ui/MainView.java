@@ -55,7 +55,7 @@ public class MainView {
         root.setPadding(new Insets(12));
 
         TextField searchField = new TextField();
-        searchField.setPromptText("Recherche par nom...");
+        searchField.setPromptText("Recherche nom, prenom ou portable...");
 
         ComboBox<FilterOption> siteFilter = new ComboBox<>();
         ComboBox<FilterOption> departmentFilter = new ComboBox<>();
@@ -66,7 +66,7 @@ public class MainView {
         Button resetButton = new Button("Reinitialiser");
 
         HBox filterBar = new HBox(10,
-                new Label("Nom"), searchField,
+            new Label("Nom/Prenom/Portable"), searchField,
                 new Label("Site"), siteFilter,
                 new Label("Service"), departmentFilter,
                 resetButton
