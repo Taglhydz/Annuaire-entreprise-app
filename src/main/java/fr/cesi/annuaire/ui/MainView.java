@@ -5,6 +5,7 @@ import fr.cesi.annuaire.entity.Employee;
 import fr.cesi.annuaire.entity.Site;
 import fr.cesi.annuaire.service.AdminAuthService;
 import fr.cesi.annuaire.service.DirectoryService;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,6 +13,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -64,11 +66,13 @@ public class MainView {
         departmentFilter.setPrefWidth(220);
 
         Button resetButton = new Button("Reinitialiser");
+        Button refreshButton = new Button("Rafraichir");
 
         HBox filterBar = new HBox(10,
             new Label("Nom/Prenom/Portable"), searchField,
                 new Label("Site"), siteFilter,
                 new Label("Service"), departmentFilter,
+            refreshButton,
                 resetButton
         );
         filterBar.setPadding(new Insets(0, 0, 10, 0));
@@ -93,6 +97,11 @@ public class MainView {
             searchField.clear();
             siteFilter.getSelectionModel().selectFirst();
             departmentFilter.getSelectionModel().selectFirst();
+            refreshData(searchField, siteFilter, departmentFilter);
+        });
+
+        refreshButton.setOnAction(evt -> {
+            loadFilters(siteFilter, departmentFilter);
             refreshData(searchField, siteFilter, departmentFilter);
         });
 
@@ -249,9 +258,15 @@ public class MainView {
         grid.addRow(1, new Label("Mot de passe"), passwordField);
 
         dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().getButtonTypes().addAll(javafx.scene.control.ButtonType.OK, javafx.scene.control.ButtonType.CANCEL);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        dialog.setResultConverter(type -> type == javafx.scene.control.ButtonType.OK);
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        if (okButton != null) {
+            okButton.setDefaultButton(false);
+        }
+        dialog.setOnShown(event -> Platform.runLater(usernameField::requestFocus));
+
+        dialog.setResultConverter(type -> type == ButtonType.OK);
 
         Optional<Boolean> confirmed = dialog.showAndWait();
         if (confirmed.isPresent() && confirmed.get()) {

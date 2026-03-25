@@ -250,6 +250,7 @@ public class AdminDashboardView {
         Button addButton = new Button("Ajouter");
         Button updateButton = new Button("Modifier");
         Button deleteButton = new Button("Supprimer");
+        Button refreshReferencesButton = new Button("Rafraichir Sites/Services");
 
         addButton.setOnAction(evt -> withErrorHandling(() -> {
             validateEmployeeRequiredFields(lastNameField.getText(), firstNameField.getText(), siteBox, depBox);
@@ -297,6 +298,29 @@ public class AdminDashboardView {
             onDataChanged.run();
         }));
 
+        refreshReferencesButton.setOnAction(evt -> {
+            Site selectedSite = siteBox.getValue();
+            Department selectedDepartment = depBox.getValue();
+
+            siteBox.setItems(FXCollections.observableArrayList(directoryService.getSites()));
+            depBox.setItems(FXCollections.observableArrayList(directoryService.getDepartments()));
+
+            if (selectedSite != null) {
+                siteBox.getSelectionModel().select(
+                        siteBox.getItems().stream()
+                                .filter(site -> site.getId().equals(selectedSite.getId()))
+                                .findFirst()
+                                .orElse(null));
+            }
+            if (selectedDepartment != null) {
+                depBox.getSelectionModel().select(
+                        depBox.getItems().stream()
+                                .filter(dep -> dep.getId().equals(selectedDepartment.getId()))
+                                .findFirst()
+                                .orElse(null));
+            }
+        });
+
         searchField.textProperty().addListener((obs, oldV, newV) ->
                 applyEmployeeFilter(allData, filteredData, newV));
 
@@ -313,7 +337,7 @@ public class AdminDashboardView {
             depBox.getSelectionModel().select(selected.getDepartment());
         });
 
-        HBox actions = new HBox(8, addButton, updateButton, deleteButton);
+        HBox actions = new HBox(8, addButton, updateButton, deleteButton, refreshReferencesButton);
         VBox form = new VBox(10, formGrid, actions);
         form.setPadding(new Insets(12));
 
