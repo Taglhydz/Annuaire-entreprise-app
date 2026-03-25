@@ -138,8 +138,12 @@ public class AdminDashboardView {
 
     private Pagination createPagination() {
         Pagination pagination = new Pagination(1, 0);
-        pagination.setMaxPageIndicatorCount(8);
+        pagination.setMaxPageIndicatorCount(6);
         pagination.setPageFactory(pageIndex -> new Region());
+        pagination.getStyleClass().add("compact-pagination");
+        pagination.setMinHeight(40);
+        pagination.setPrefHeight(40);
+        pagination.setMaxHeight(40);
         return pagination;
     }
 
@@ -149,6 +153,9 @@ public class AdminDashboardView {
         int total = filteredData.size();
         int pageCount = Math.max(1, (int) Math.ceil((double) total / ROWS_PER_PAGE));
         pagination.setPageCount(pageCount);
+        boolean showPagination = pageCount > 1;
+        pagination.setVisible(showPagination);
+        pagination.setManaged(showPagination);
 
         int current = pagination.getCurrentPageIndex();
         if (current >= pageCount) {

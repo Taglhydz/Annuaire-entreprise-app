@@ -324,7 +324,7 @@
 /* ── TabPane (admin) ────────────────────────────────────── */
 .tab-pane {
     -fx-background-color: -color-bg;
-    -fx-tab-min-height: 40px;
+    -fx-tab-min-height: 28px;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
@@ -395,6 +395,68 @@
     -fx-font-weight: bold;
     -fx-text-fill: -color-primary;
     -fx-padding: 0 0 6 0;
+}
+
+/* ── Pagination compacte ─────────────────────────────────── */
+.compact-pagination {
+    -fx-padding: 0 0 0 0; /* réduit l'espace en bas */
+    -fx-page-information-visible: true;
+    -fx-margin-bottom: 0;
+}
+
+.compact-pagination > .pagination-control > .page-information {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-text-muted;
+    -fx-padding: 0 6 0 6;
+}
+
+.compact-pagination > .pagination-control {
+    -fx-padding: 0;
+}
+
+.compact-pagination > .pagination-control > .control-box {
+    -fx-spacing: 4;
+    -fx-alignment: CENTER;
+}
+
+.compact-pagination .number-button,
+.compact-pagination .left-arrow-button,
+.compact-pagination .right-arrow-button {
+    -fx-min-width: 26px;
+    -fx-pref-width: 26px;
+    -fx-min-height: 24px;
+    -fx-pref-height: 24px;
+    -fx-padding: 0;
+    -fx-font-size: 11px;
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1px;
+    -fx-text-fill: -color-text;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.compact-pagination .number-button:hover,
+.compact-pagination .left-arrow-button:hover,
+.compact-pagination .right-arrow-button:hover {
+    -fx-border-color: -color-accent;
+}
+
+.compact-pagination .number-button:selected {
+    -fx-background-color: -color-accent;
+    -fx-border-color: -color-accent;
+    -fx-text-fill: white;
+}
+
+.compact-pagination .left-arrow,
+.compact-pagination .right-arrow {
+    -fx-background-color: -color-text-muted;
+}
+
+.compact-pagination .left-arrow-button:disabled,
+.compact-pagination .right-arrow-button:disabled,
+.compact-pagination .number-button:disabled {
+    -fx-opacity: 0.45;
 }
 
 /* ── Dialog / Alert ─────────────────────────────────────── */
