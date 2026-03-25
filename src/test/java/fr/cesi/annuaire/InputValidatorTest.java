@@ -43,4 +43,16 @@ class InputValidatorTest {
         assertThrows(IllegalArgumentException.class,
                 () -> InputValidator.validatePersonName("Jean2", "Nom"));
     }
+
+    @Test
+    void validatePersonName_shouldCapitalizeSimpleName() {
+        String normalized = InputValidator.validatePersonName("dupont", "Nom");
+        assertEquals("Dupont", normalized);
+    }
+
+    @Test
+    void validatePersonName_shouldCapitalizeCompositeName() {
+        String normalized = InputValidator.validatePersonName("  jean-luc d'arcy  ", "Prenom");
+        assertEquals("Jean-Luc D'Arcy", normalized);
+    }
 }

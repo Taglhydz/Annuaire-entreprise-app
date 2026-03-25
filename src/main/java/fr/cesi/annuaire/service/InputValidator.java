@@ -18,7 +18,7 @@ public final class InputValidator {
         if (!PERSON_NAME_PATTERN.matcher(normalized).matches()) {
             throw new IllegalArgumentException(label + " invalide");
         }
-        return normalized;
+        return toNameCase(normalized);
     }
 
     public static String validateCity(String value) {
@@ -75,5 +75,26 @@ public final class InputValidator {
         }
         String normalized = value.trim().replaceAll("\\s+", " ");
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private static String toNameCase(String input) {
+        String lower = input.toLowerCase(Locale.ROOT);
+        StringBuilder sb = new StringBuilder(lower.length());
+        boolean shouldUppercase = true;
+
+        for (int i = 0; i < lower.length(); i++) {
+            char c = lower.charAt(i);
+            if (Character.isLetter(c) && shouldUppercase) {
+                sb.append(Character.toUpperCase(c));
+                shouldUppercase = false;
+            } else {
+                sb.append(c);
+                if (c == ' ' || c == '-' || c == '\'') {
+                    shouldUppercase = true;
+                }
+            }
+        }
+
+        return sb.toString();
     }
 }
