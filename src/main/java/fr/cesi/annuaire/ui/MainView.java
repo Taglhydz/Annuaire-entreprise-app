@@ -26,6 +26,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
@@ -34,6 +35,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 public class MainView {
+
+    private static final double LARGE_CONTROL_HEIGHT = 52;
 
     private final DirectoryService directoryService;
     private final AdminAuthService adminAuthService;
@@ -60,17 +63,22 @@ public class MainView {
         // Deux champs de recherche séparés
         TextField nameSearchField = new TextField();
         nameSearchField.setPromptText("Recherche nom / prénom...");
+        setLargeHeight(nameSearchField);
 
         TextField phoneSearchField = new TextField();
         phoneSearchField.setPromptText("Recherche portable...");
+        setLargeHeight(phoneSearchField);
 
         ComboBox<FilterOption> siteFilter = new ComboBox<>();
         ComboBox<FilterOption> departmentFilter = new ComboBox<>();
 
         siteFilter.setPrefWidth(220);
         departmentFilter.setPrefWidth(220);
+        setLargeHeight(siteFilter);
+        setLargeHeight(departmentFilter);
 
         Button resetButton = new Button("Réinitialiser");
+        setLargeHeight(resetButton);
 
         HBox filterBar = new HBox(10,
             new Label("Nom / Prénom"), nameSearchField,
@@ -255,6 +263,11 @@ public class MainView {
 
     private String safe(String value) {
         return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private void setLargeHeight(Region control) {
+        control.setMinHeight(LARGE_CONTROL_HEIGHT);
+        control.setPrefHeight(LARGE_CONTROL_HEIGHT);
     }
 
     private void openAdminLoginDialog(TextField nameSearchField, TextField phoneSearchField,

@@ -23,11 +23,14 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.util.Locale;
 
 public class AdminDashboardView {
+
+    private static final double LARGE_CONTROL_HEIGHT = 52;
 
     private final DirectoryService directoryService;
     private final Runnable onDataChanged;
@@ -125,6 +128,7 @@ public class AdminDashboardView {
         cityField.setPromptText("Ville");
         TextField searchField = new TextField();
         searchField.setPromptText("Recherche site par ville...");
+        setLargeHeight(searchField);
 
         Label errorBanner = createErrorBanner();
 
@@ -132,6 +136,10 @@ public class AdminDashboardView {
         Button newButton = new Button("Nouveau");
         Button updateButton = new Button("Modifier");
         Button deleteButton = new Button("Supprimer");
+        setLargeHeight(addButton);
+        setLargeHeight(newButton);
+        setLargeHeight(updateButton);
+        setLargeHeight(deleteButton);
 
         // --- Bouton Ajouter désactivé si le champ est vide ---
         addButton.setDisable(true);
@@ -237,6 +245,7 @@ public class AdminDashboardView {
         nameField.setPromptText("Nom du service");
         TextField searchField = new TextField();
         searchField.setPromptText("Recherche service par nom...");
+        setLargeHeight(searchField);
 
         Label errorBanner = createErrorBanner();
 
@@ -244,6 +253,10 @@ public class AdminDashboardView {
         Button newButton = new Button("Nouveau");
         Button updateButton = new Button("Modifier");
         Button deleteButton = new Button("Supprimer");
+        setLargeHeight(addButton);
+        setLargeHeight(newButton);
+        setLargeHeight(updateButton);
+        setLargeHeight(deleteButton);
 
         // --- Bouton Ajouter désactivé si le champ est vide ---
         addButton.setDisable(true);
@@ -364,6 +377,7 @@ public class AdminDashboardView {
         TextField emailField = new TextField();
         TextField searchField = new TextField();
         searchField.setPromptText("Recherche salarié (nom, prénom, email, site, service)...");
+        setLargeHeight(searchField);
         ComboBox<Site> siteBox = new ComboBox<>();
         ComboBox<Department> depBox = new ComboBox<>();
         this.employeeSiteBox = siteBox;
@@ -387,6 +401,10 @@ public class AdminDashboardView {
         Button newButton = new Button("Nouveau");
         Button updateButton = new Button("Modifier");
         Button deleteButton = new Button("Supprimer");
+        setLargeHeight(addButton);
+        setLargeHeight(newButton);
+        setLargeHeight(updateButton);
+        setLargeHeight(deleteButton);
 
         // --- Label dynamique listant les champs manquants ---
         Label missingFieldsLabel = new Label();
@@ -524,7 +542,7 @@ public class AdminDashboardView {
 
         refreshEmployees(allData, filteredData, null);
 
-        Tab tab = new Tab("Salaries", pane);
+        Tab tab = new Tab("Salariés", pane);
         tab.setClosable(false);
         return tab;
     }
@@ -627,6 +645,11 @@ public class AdminDashboardView {
 
     private boolean contains(String source, String term) {
         return source != null && source.toLowerCase(Locale.ROOT).contains(term);
+    }
+
+    private void setLargeHeight(Region control) {
+        control.setMinHeight(LARGE_CONTROL_HEIGHT);
+        control.setPrefHeight(LARGE_CONTROL_HEIGHT);
     }
 
     // -------------------------------------------------------------------------
