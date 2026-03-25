@@ -30,6 +30,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 public class MainView {
@@ -56,8 +57,12 @@ public class MainView {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(12));
 
-        TextField searchField = new TextField();
-        searchField.setPromptText("Recherche nom, prénom ou portable...");
+        // Deux champs de recherche séparés
+        TextField nameSearchField = new TextField();
+        nameSearchField.setPromptText("Recherche nom / prénom...");
+
+        TextField phoneSearchField = new TextField();
+        phoneSearchField.setPromptText("Recherche portable...");
 
         ComboBox<FilterOption> siteFilter = new ComboBox<>();
         ComboBox<FilterOption> departmentFilter = new ComboBox<>();
@@ -68,10 +73,11 @@ public class MainView {
         Button resetButton = new Button("Réinitialiser");
 
         HBox filterBar = new HBox(10,
-            new Label("Nom/Prénom/Portable"), searchField,
-                new Label("Site"), siteFilter,
-                new Label("Service"), departmentFilter,
-                resetButton
+            new Label("Nom / Prénom"), nameSearchField,
+            new Label("Portable"), phoneSearchField,
+            new Label("Site"), siteFilter,
+            new Label("Service"), departmentFilter,
+            resetButton
         );
         filterBar.setPadding(new Insets(0, 0, 10, 0));
 
@@ -85,17 +91,19 @@ public class MainView {
         root.setRight(detailsPanel);
 
         loadFilters(siteFilter, departmentFilter);
-        refreshData(searchField, siteFilter, departmentFilter);
+        refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
 
-        searchField.textProperty().addListener((obs, oldV, newV) -> refreshData(searchField, siteFilter, departmentFilter));
-        siteFilter.valueProperty().addListener((obs, oldV, newV) -> refreshData(searchField, siteFilter, departmentFilter));
-        departmentFilter.valueProperty().addListener((obs, oldV, newV) -> refreshData(searchField, siteFilter, departmentFilter));
+        nameSearchField.textProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
+        phoneSearchField.textProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
+        siteFilter.valueProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
+        departmentFilter.valueProperty().addListener((obs, oldV, newV) -> refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter));
 
         resetButton.setOnAction(evt -> {
-            searchField.clear();
+            nameSearchField.clear();
+            phoneSearchField.clear();
             siteFilter.getSelectionModel().selectFirst();
             departmentFilter.getSelectionModel().selectFirst();
-            refreshData(searchField, siteFilter, departmentFilter);
+            refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
         });
 
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> showDetails(newSel));
@@ -103,7 +111,7 @@ public class MainView {
         Scene scene = new Scene(root, 1300, 700);
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.Q) {
-                openAdminLoginDialog(searchField, siteFilter, departmentFilter);
+                openAdminLoginDialog(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
                 event.consume();
             }
         });
@@ -131,11 +139,28 @@ public class MainView {
         departmentFilter.getSelectionModel().selectFirst();
     }
 
-    private void refreshData(TextField searchField, ComboBox<FilterOption> siteFilter, ComboBox<FilterOption> departmentFilter) {
+    private void refreshData(TextField nameSearchField, TextField phoneSearchField,
+                              ComboBox<FilterOption> siteFilter, ComboBox<FilterOption> departmentFilter) {
         Long siteId = Optional.ofNullable(siteFilter.getValue()).map(FilterOption::getId).orElse(null);
         Long departmentId = Optional.ofNullable(departmentFilter.getValue()).map(FilterOption::getId).orElse(null);
 
-        List<Employee> result = directoryService.searchEmployees(searchField.getText(), siteId, departmentId);
+        // On passe le portable au service (recherche existante)
+        List<Employee> result = directoryService.searchEmployees(phoneSearchField.getText(), siteId, departmentId);
+
+        // Filtre nom/prénom côté client avec support multi-mots (ex: "Jean Dupont")
+        String nameQuery = nameSearchField.getText().trim();
+        if (!nameQuery.isBlank()) {
+            String[] parts = nameQuery.toLowerCase(Locale.ROOT).split("\\s+");
+            result = result.stream().filter(emp -> {
+                String nom = emp.getNom() == null ? "" : emp.getNom().toLowerCase(Locale.ROOT);
+                String prenom = emp.getPrenom() == null ? "" : emp.getPrenom().toLowerCase(Locale.ROOT);
+                for (String part : parts) {
+                    if (!nom.contains(part) && !prenom.contains(part)) return false;
+                }
+                return true;
+            }).toList();
+        }
+
         tableData.setAll(result);
     }
 
@@ -232,7 +257,7 @@ public class MainView {
         return value == null || value.isBlank() ? "-" : value;
     }
 
-    private void openAdminLoginDialog(TextField searchField,
+    private void openAdminLoginDialog(TextField nameSearchField, TextField phoneSearchField,
                                       ComboBox<FilterOption> siteFilter,
                                       ComboBox<FilterOption> departmentFilter) {
         Dialog<Boolean> dialog = new Dialog<>();
@@ -267,7 +292,7 @@ public class MainView {
             if (ok) {
                 new AdminDashboardView(directoryService, () -> {
                     loadFilters(siteFilter, departmentFilter);
-                    refreshData(searchField, siteFilter, departmentFilter);
+                    refreshData(nameSearchField, phoneSearchField, siteFilter, departmentFilter);
                 }).show();
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Accès refusé");
