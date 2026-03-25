@@ -30,6 +30,7 @@ public class App extends Application {
 
         stage.setTitle("Annuaire entreprise");
         stage.setScene(mainView.buildScene());
+        stage.setMaximized(true);
         stage.show();
     }
 

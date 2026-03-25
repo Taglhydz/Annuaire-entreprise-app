@@ -36,7 +36,7 @@ import java.util.Locale;
 public class AdminDashboardView {
 
     private static final double CONTROL_HEIGHT = 40;
-    private static final int ROWS_PER_PAGE = 10;
+    private static final int ROWS_PER_PAGE = 14;
 
     private final DirectoryService directoryService;
     private final Runnable onDataChanged;
@@ -63,6 +63,7 @@ public class AdminDashboardView {
             getClass().getResource("/styles/app.css").toExternalForm()
         );
         stage.setScene(scene);
+        stage.setMaximized(true);
         stage.setOnHidden(event -> onDataChanged.run());
         stage.show();
     }
