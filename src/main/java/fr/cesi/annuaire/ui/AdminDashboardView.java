@@ -29,6 +29,8 @@ public class AdminDashboardView {
 
     private final DirectoryService directoryService;
     private final Runnable onDataChanged;
+    private ComboBox<Site> employeeSiteBox;
+    private ComboBox<Department> employeeDepartmentBox;
 
     public AdminDashboardView(DirectoryService directoryService, Runnable onDataChanged) {
         this.directoryService = directoryService;
@@ -47,6 +49,7 @@ public class AdminDashboardView {
 
         Scene scene = new Scene(tabPane, 1200, 680);
         stage.setScene(scene);
+        stage.setOnHidden(event -> onDataChanged.run());
         stage.show();
     }
 
@@ -80,7 +83,7 @@ public class AdminDashboardView {
         updateButton.setOnAction(evt -> withErrorHandling(() -> {
             Site selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                throw new IllegalArgumentException("Selectionnez un site");
+                throw new IllegalArgumentException("Sélectionnez un site");
             }
             validateRequiredText(cityField.getText(), "Ville");
             directoryService.updateSite(selected.getId(), cityField.getText());
@@ -92,7 +95,7 @@ public class AdminDashboardView {
         deleteButton.setOnAction(evt -> withErrorHandling(() -> {
             Site selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                throw new IllegalArgumentException("Selectionnez un site");
+                throw new IllegalArgumentException("Sélectionnez un site");
             }
             directoryService.deleteSite(selected.getId());
             cityField.clear();
@@ -155,7 +158,7 @@ public class AdminDashboardView {
         updateButton.setOnAction(evt -> withErrorHandling(() -> {
             Department selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                throw new IllegalArgumentException("Selectionnez un service");
+                throw new IllegalArgumentException("Sélectionnez un service");
             }
             validateRequiredText(nameField.getText(), "Service");
             directoryService.updateDepartment(selected.getId(), nameField.getText());
@@ -167,7 +170,7 @@ public class AdminDashboardView {
         deleteButton.setOnAction(evt -> withErrorHandling(() -> {
             Department selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                throw new IllegalArgumentException("Selectionnez un service");
+                throw new IllegalArgumentException("Sélectionnez un service");
             }
             directoryService.deleteDepartment(selected.getId());
             nameField.clear();
@@ -208,7 +211,7 @@ public class AdminDashboardView {
         TableColumn<Employee, String> lastNameCol = new TableColumn<>("Nom");
         lastNameCol.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().getNom()));
 
-        TableColumn<Employee, String> firstNameCol = new TableColumn<>("Prenom");
+        TableColumn<Employee, String> firstNameCol = new TableColumn<>("Prénom");
         firstNameCol.setCellValueFactory(v -> new SimpleStringProperty(v.getValue().getPrenom()));
 
         TableColumn<Employee, String> siteCol = new TableColumn<>("Site");
@@ -229,9 +232,11 @@ public class AdminDashboardView {
         TextField mobilePhoneField = new TextField();
         TextField emailField = new TextField();
         TextField searchField = new TextField();
-        searchField.setPromptText("Recherche salarie (nom, prenom, email, site, service)...");
+        searchField.setPromptText("Recherche salarié (nom, prénom, email, site, service)...");
         ComboBox<Site> siteBox = new ComboBox<>();
         ComboBox<Department> depBox = new ComboBox<>();
+        this.employeeSiteBox = siteBox;
+        this.employeeDepartmentBox = depBox;
 
         siteBox.setItems(FXCollections.observableArrayList(directoryService.getSites()));
         depBox.setItems(FXCollections.observableArrayList(directoryService.getDepartments()));
@@ -240,9 +245,9 @@ public class AdminDashboardView {
         formGrid.setHgap(8);
         formGrid.setVgap(8);
         formGrid.addRow(0, new Label("Nom (*)"), lastNameField);
-        formGrid.addRow(1, new Label("Prenom (*)"), firstNameField);
-        formGrid.addRow(2, new Label("Tel fixe"), fixedPhoneField);
-        formGrid.addRow(3, new Label("Tel portable"), mobilePhoneField);
+        formGrid.addRow(1, new Label("Prénom (*)"), firstNameField);
+        formGrid.addRow(2, new Label("Tél fixe"), fixedPhoneField);
+        formGrid.addRow(3, new Label("Tél portable"), mobilePhoneField);
         formGrid.addRow(4, new Label("Email"), emailField);
         formGrid.addRow(5, new Label("Site (*)"), siteBox);
         formGrid.addRow(6, new Label("Service (*)"), depBox);
@@ -250,7 +255,6 @@ public class AdminDashboardView {
         Button addButton = new Button("Ajouter");
         Button updateButton = new Button("Modifier");
         Button deleteButton = new Button("Supprimer");
-        Button refreshReferencesButton = new Button("Rafraichir Sites/Services");
 
         addButton.setOnAction(evt -> withErrorHandling(() -> {
             validateEmployeeRequiredFields(lastNameField.getText(), firstNameField.getText(), siteBox, depBox);
@@ -270,7 +274,7 @@ public class AdminDashboardView {
         updateButton.setOnAction(evt -> withErrorHandling(() -> {
             Employee selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                throw new IllegalArgumentException("Selectionnez un salarie");
+                throw new IllegalArgumentException("Sélectionnez un salarié");
             }
             validateEmployeeRequiredFields(lastNameField.getText(), firstNameField.getText(), siteBox, depBox);
             directoryService.updateEmployee(
@@ -290,36 +294,13 @@ public class AdminDashboardView {
         deleteButton.setOnAction(evt -> withErrorHandling(() -> {
             Employee selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                throw new IllegalArgumentException("Selectionnez un salarie");
+                throw new IllegalArgumentException("Sélectionnez un salarié");
             }
             directoryService.deleteEmployee(selected.getId());
             clearEmployeeForm(lastNameField, firstNameField, fixedPhoneField, mobilePhoneField, emailField, siteBox, depBox);
             refreshEmployees(allData, filteredData, searchField.getText());
             onDataChanged.run();
         }));
-
-        refreshReferencesButton.setOnAction(evt -> {
-            Site selectedSite = siteBox.getValue();
-            Department selectedDepartment = depBox.getValue();
-
-            siteBox.setItems(FXCollections.observableArrayList(directoryService.getSites()));
-            depBox.setItems(FXCollections.observableArrayList(directoryService.getDepartments()));
-
-            if (selectedSite != null) {
-                siteBox.getSelectionModel().select(
-                        siteBox.getItems().stream()
-                                .filter(site -> site.getId().equals(selectedSite.getId()))
-                                .findFirst()
-                                .orElse(null));
-            }
-            if (selectedDepartment != null) {
-                depBox.getSelectionModel().select(
-                        depBox.getItems().stream()
-                                .filter(dep -> dep.getId().equals(selectedDepartment.getId()))
-                                .findFirst()
-                                .orElse(null));
-            }
-        });
 
         searchField.textProperty().addListener((obs, oldV, newV) ->
                 applyEmployeeFilter(allData, filteredData, newV));
@@ -337,7 +318,7 @@ public class AdminDashboardView {
             depBox.getSelectionModel().select(selected.getDepartment());
         });
 
-        HBox actions = new HBox(8, addButton, updateButton, deleteButton, refreshReferencesButton);
+        HBox actions = new HBox(8, addButton, updateButton, deleteButton);
         VBox form = new VBox(10, formGrid, actions);
         form.setPadding(new Insets(12));
 
@@ -357,11 +338,13 @@ public class AdminDashboardView {
     private void refreshSites(ObservableList<Site> allData, ObservableList<Site> filteredData, String filterValue) {
         allData.setAll(directoryService.getSites());
         applySiteFilter(allData, filteredData, filterValue);
+        refreshEmployeeReferenceChoices();
     }
 
     private void refreshDepartments(ObservableList<Department> allData, ObservableList<Department> filteredData, String filterValue) {
         allData.setAll(directoryService.getDepartments());
         applyDepartmentFilter(allData, filteredData, filterValue);
+        refreshEmployeeReferenceChoices();
     }
 
     private void refreshEmployees(ObservableList<Employee> allData, ObservableList<Employee> filteredData, String filterValue) {
@@ -434,7 +417,7 @@ public class AdminDashboardView {
         }
         if (firstName == null || firstName.isBlank()) {
             appendComma(missing);
-            missing.append("Prenom");
+            missing.append("Prénom");
         }
         if (siteBox.getValue() == null) {
             appendComma(missing);
@@ -445,7 +428,7 @@ public class AdminDashboardView {
             missing.append("Service");
         }
         if (!missing.isEmpty()) {
-            throw new IllegalArgumentException("Champs obligatoires manquants: " + missing);
+            throw new IllegalArgumentException("Champs obligatoires manquants : " + missing);
         }
     }
 
@@ -471,6 +454,33 @@ public class AdminDashboardView {
         depBox.getSelectionModel().clearSelection();
         siteBox.setItems(FXCollections.observableArrayList(directoryService.getSites()));
         depBox.setItems(FXCollections.observableArrayList(directoryService.getDepartments()));
+    }
+
+    private void refreshEmployeeReferenceChoices() {
+        if (employeeSiteBox == null || employeeDepartmentBox == null) {
+            return;
+        }
+
+        Site selectedSite = employeeSiteBox.getValue();
+        Department selectedDepartment = employeeDepartmentBox.getValue();
+
+        employeeSiteBox.setItems(FXCollections.observableArrayList(directoryService.getSites()));
+        employeeDepartmentBox.setItems(FXCollections.observableArrayList(directoryService.getDepartments()));
+
+        if (selectedSite != null) {
+            employeeSiteBox.getSelectionModel().select(
+                    employeeSiteBox.getItems().stream()
+                            .filter(site -> site.getId().equals(selectedSite.getId()))
+                            .findFirst()
+                            .orElse(null));
+        }
+        if (selectedDepartment != null) {
+            employeeDepartmentBox.getSelectionModel().select(
+                    employeeDepartmentBox.getItems().stream()
+                            .filter(dep -> dep.getId().equals(selectedDepartment.getId()))
+                            .findFirst()
+                            .orElse(null));
+        }
     }
 
     private void withErrorHandling(Runnable action) {

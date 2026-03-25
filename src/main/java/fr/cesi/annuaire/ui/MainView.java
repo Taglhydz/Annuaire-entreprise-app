@@ -57,7 +57,7 @@ public class MainView {
         root.setPadding(new Insets(12));
 
         TextField searchField = new TextField();
-        searchField.setPromptText("Recherche nom, prenom ou portable...");
+        searchField.setPromptText("Recherche nom, prénom ou portable...");
 
         ComboBox<FilterOption> siteFilter = new ComboBox<>();
         ComboBox<FilterOption> departmentFilter = new ComboBox<>();
@@ -65,14 +65,12 @@ public class MainView {
         siteFilter.setPrefWidth(220);
         departmentFilter.setPrefWidth(220);
 
-        Button resetButton = new Button("Reinitialiser");
-        Button refreshButton = new Button("Rafraichir");
+        Button resetButton = new Button("Réinitialiser");
 
         HBox filterBar = new HBox(10,
-            new Label("Nom/Prenom/Portable"), searchField,
+            new Label("Nom/Prénom/Portable"), searchField,
                 new Label("Site"), siteFilter,
                 new Label("Service"), departmentFilter,
-            refreshButton,
                 resetButton
         );
         filterBar.setPadding(new Insets(0, 0, 10, 0));
@@ -97,11 +95,6 @@ public class MainView {
             searchField.clear();
             siteFilter.getSelectionModel().selectFirst();
             departmentFilter.getSelectionModel().selectFirst();
-            refreshData(searchField, siteFilter, departmentFilter);
-        });
-
-        refreshButton.setOnAction(evt -> {
-            loadFilters(siteFilter, departmentFilter);
             refreshData(searchField, siteFilter, departmentFilter);
         });
 
@@ -152,7 +145,7 @@ public class MainView {
         TableColumn<Employee, String> nomCol = new TableColumn<>("Nom");
         nomCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getNom()));
 
-        TableColumn<Employee, String> prenomCol = new TableColumn<>("Prenom");
+        TableColumn<Employee, String> prenomCol = new TableColumn<>("Prénom");
         prenomCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getPrenom()));
 
         TableColumn<Employee, String> siteCol = new TableColumn<>("Site");
@@ -175,7 +168,7 @@ public class MainView {
     }
 
     private VBox buildDetailsPanel() {
-        Label title = new Label("Fiche salarie");
+        Label title = new Label("Fiche salarié");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         nomValue = valueLabel();
@@ -189,9 +182,9 @@ public class MainView {
         VBox panel = new VBox(8,
                 title,
                 line("Nom", nomValue),
-                line("Prenom", prenomValue),
-                line("Telephone fixe", fixeValue),
-                line("Telephone portable", portableValue),
+                line("Prénom", prenomValue),
+                line("Téléphone fixe", fixeValue),
+                line("Téléphone portable", portableValue),
                 line("Email", emailValue),
                 line("Site", siteValue),
                 line("Service", serviceValue)
@@ -243,7 +236,7 @@ public class MainView {
                                       ComboBox<FilterOption> siteFilter,
                                       ComboBox<FilterOption> departmentFilter) {
         Dialog<Boolean> dialog = new Dialog<>();
-        dialog.setTitle("Authentification admin");
+        dialog.setTitle("Authentification administrateur");
 
         TextField usernameField = new TextField();
         usernameField.setPromptText("Username");
@@ -277,7 +270,7 @@ public class MainView {
                     refreshData(searchField, siteFilter, departmentFilter);
                 }).show();
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Acces refuse");
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Accès refusé");
                 alert.showAndWait();
             }
         }
