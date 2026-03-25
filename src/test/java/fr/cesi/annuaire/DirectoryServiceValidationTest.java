@@ -61,4 +61,28 @@ class DirectoryServiceValidationTest {
                 null,
                 1L));
     }
+
+    @Test
+    void createEmployee_shouldRejectInvalidFrenchPhone() {
+        assertThrows(IllegalArgumentException.class, () -> service.createEmployee(
+                "Durand",
+                "Luc",
+                "06-12-34-56-78",
+                null,
+                "luc.durand@entreprise.fr",
+                1L,
+                1L));
+    }
+
+    @Test
+    void createEmployee_shouldRejectInvalidName() {
+        assertThrows(IllegalArgumentException.class, () -> service.createEmployee(
+                "Durand2",
+                "Luc",
+                null,
+                null,
+                "luc.durand@entreprise.fr",
+                1L,
+                1L));
+    }
 }

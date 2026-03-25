@@ -11,11 +11,8 @@ import jakarta.persistence.EntityTransaction;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 public class DirectoryService {
-
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     private final EntityManager entityManager;
 
@@ -57,14 +54,14 @@ public class DirectoryService {
     }
 
     public Site createSite(String city) {
-        String normalized = requireText(city, "La ville est obligatoire");
+        String normalized = InputValidator.validateCity(city);
         Site site = new Site();
         site.setVille(normalized);
         return inTransaction(() -> siteRepository.save(site));
     }
 
     public Site updateSite(Long id, String city) {
-        String normalized = requireText(city, "La ville est obligatoire");
+        String normalized = InputValidator.validateCity(city);
         Site site = siteRepository.findById(requireId(id)).orElseThrow(() -> new IllegalArgumentException("Site introuvable"));
         site.setVille(normalized);
         return inTransaction(() -> siteRepository.update(site));
@@ -79,14 +76,14 @@ public class DirectoryService {
     }
 
     public Department createDepartment(String name) {
-        String normalized = requireText(name, "Le nom du service est obligatoire");
+        String normalized = InputValidator.validateDepartmentName(name);
         Department department = new Department();
         department.setNom(normalized);
         return inTransaction(() -> departmentRepository.save(department));
     }
 
     public Department updateDepartment(Long id, String name) {
-        String normalized = requireText(name, "Le nom du service est obligatoire");
+        String normalized = InputValidator.validateDepartmentName(name);
         Department department = departmentRepository.findById(requireId(id))
                 .orElseThrow(() -> new IllegalArgumentException("Service introuvable"));
         department.setNom(normalized);
@@ -145,11 +142,11 @@ public class DirectoryService {
                               String email,
                               Long siteId,
                               Long departmentId) {
-        employee.setNom(requireText(lastName, "Le nom est obligatoire"));
-        employee.setPrenom(requireText(firstName, "Le prenom est obligatoire"));
-        employee.setTelephoneFixe(normalizeNullable(fixedPhone));
-        employee.setTelephonePortable(normalizeNullable(mobilePhone));
-        employee.setEmail(validateEmail(email));
+                    employee.setNom(InputValidator.validatePersonName(lastName, "Nom"));
+                    employee.setPrenom(InputValidator.validatePersonName(firstName, "Prenom"));
+                    employee.setTelephoneFixe(InputValidator.normalizeFrenchPhone(fixedPhone, "Telephone fixe"));
+                    employee.setTelephonePortable(InputValidator.normalizeFrenchPhone(mobilePhone, "Telephone portable"));
+                    employee.setEmail(InputValidator.normalizeEmail(email));
 
         Site site = siteRepository.findById(requireId(siteId))
                 .orElseThrow(() -> new IllegalArgumentException("Site introuvable"));
@@ -160,39 +157,11 @@ public class DirectoryService {
         employee.setDepartment(department);
     }
 
-    private String validateEmail(String email) {
-        String normalized = normalizeNullable(email);
-        if (normalized == null) {
-            return null;
-        }
-
-        if (!EMAIL_PATTERN.matcher(normalized).matches()) {
-            throw new IllegalArgumentException("Email invalide");
-        }
-        return normalized;
-    }
-
     private Long requireId(Long id) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Identifiant invalide");
         }
         return id;
-    }
-
-    private String requireText(String text, String message) {
-        String normalized = normalizeNullable(text);
-        if (normalized == null) {
-            throw new IllegalArgumentException(message);
-        }
-        return normalized;
-    }
-
-    private String normalizeNullable(String value) {
-        if (value == null) {
-            return null;
-        }
-        String normalized = value.trim();
-        return normalized.isEmpty() ? null : normalized;
     }
 
     private <T> T inTransaction(TransactionWork<T> work) {
