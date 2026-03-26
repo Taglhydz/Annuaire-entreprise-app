@@ -702,14 +702,27 @@ public class AdminDashboardView {
         Label formTitle = new Label("Salarié");
         formTitle.getStyleClass().add("admin-form-title");
 
-        HBox actions = new HBox(8, addButton, newButton, updateButton, deleteButton);
-        actions.setAlignment(Pos.CENTER_LEFT);
-        stretchActionButtons(actions, addButton, newButton, updateButton, deleteButton);
+        // Ligne 1 : Ajouter (pleine largeur, mode création)
+        addButton.setMaxWidth(Double.MAX_VALUE);
+
+        // Ligne 2 : Nouveau (pleine largeur, réinitialise le formulaire)
+        newButton.setMaxWidth(Double.MAX_VALUE);
+
+        // Ligne 3 : Modifier | Supprimer (côte à côte, mode édition)
+        HBox editActions = new HBox(6, updateButton, deleteButton);
+        editActions.setFillHeight(true);
+        updateButton.setMaxWidth(Double.MAX_VALUE);
+        deleteButton.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(updateButton, Priority.ALWAYS);
+        HBox.setHgrow(deleteButton, Priority.ALWAYS);
+
+        VBox actions = new VBox(6, addButton, newButton, editActions);
+        actions.setFillWidth(true);
 
         VBox form = new VBox(10, formTitle, formGrid, missingFieldsLabel, actions, errorBanner);
         form.getStyleClass().add("admin-form-panel");
-        form.setPrefWidth(380);
-        form.setMinWidth(340);
+        form.setPrefWidth(300);
+        form.setMinWidth(260);
 
         VBox tableSection = new VBox(8, table, pagination);
         VBox.setVgrow(table, Priority.ALWAYS);
